@@ -1,0 +1,49 @@
+version: "3.9" # specify docker-compose version
+
+services: # defines a group of containers
+  client: # name of the react container
+    build: # specify build configuration
+      context: ./client # path of the Dockerfile
+    ports: # expose ports, host:container
+      - 3000:5173
+    volumes: # specifies volumes to mount, host:container
+      - ./client/src:/app/client/src
+      - ./client/public:/app/client/public
+      - dist:/app/client/dist
+    command: npm run dev # start the vite dev server
+
+  server: # name of the node container
+    build:
+      context: ./server
+    ports:
+      - 1337:1337
+    restart: always # restart container if it crashes
+    volumes:
+      - ./server/src:/app/server/src
+      - dist:/app/client/dist
+    environment: # environment variables for the container
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=devdb
+      - DB_USER=devuser
+      - DB_PASSWORD=changeme
+      - HOST=0.0.0.0
+      - PORT=1337
+    depends_on: # wait for the postgres container to be "ready" before starting the node container
+      - db
+    command: npm run dev # override default command in Dockerfile
+
+  db: # name of the postgres container
+    image: postgres:13 # specify image to build container from, alpine is a lightweight linux distro
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=changeme
+
+volumes: # specify volumes to be created
+  dist: # name of the client volume, nothing else needs to be specified
+  db-data: # name of the database volume
